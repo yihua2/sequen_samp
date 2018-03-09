@@ -5,6 +5,7 @@ source("/Users/Vera/Dropbox/study/google/owea interference-copy.R")
 set.seed(300)
 library(truncnorm)
 library(MASS)
+library(prodlim)
 
 
 N= matrix(c(rep(0,60),rep(1,60), 
@@ -44,7 +45,7 @@ sort(pnorm(X%*%theta),decreasing = T)[1:20]
 
 ###### Fractional Factorial with multistage #####
 
-N=20
+N=100
 arm_opt_mult_glm = c()
 arm_opt_mult_rpm =c()
 for (R in 1:N){
@@ -57,12 +58,12 @@ n_acc = numeric(120)
 
 
 ### phase 1: rough estimate of theta 
-
-xt = rbind(X,X,X,X,X)
-yt = matrix(rbinom(n = 600,size = 1,prob = pnorm(xt%*%theta)),nrow =600) #exp(xt%*%theta)/(1+exp(xt%*%theta))
+kk = 50
+xt = matrix(rep(t(X),kk),ncol = 15,byrow = T)
+yt = matrix(rbinom(n = kk*120,size = 1,prob = pnorm(xt%*%theta)),nrow =kk*120) #exp(xt%*%theta)/(1+exp(xt%*%theta))
 ind = 1:120
 
-yyt = as.data.frame(cbind(rep(ind,5), yt))
+yyt = as.data.frame(cbind(rep(ind,kk), yt))
 names(yyt ) = c("ind","V2")
 uni_yyt = aggregate(V2~ind,data = yyt, FUN = sum)# conversions 
 
@@ -91,7 +92,7 @@ g_part <- diag(rep(1,15))
 design_stg1 = xt
 theta_stg1 = theta_hat
 
-d1d <- opt_design(design_stg1,theta_stg1 ,n=500,pp=0,space)
+d1d <- opt_design(design_stg1,theta_stg1 ,n=6000,pp=0,space)
 
 #d1d$design_exact
 #d1d$weight_exact
@@ -184,6 +185,13 @@ arm_opt_mult_glm[R] = dat[which.max(fitted.values(fit)),]$config # 77??
 #total # of observations used to get best arm for binomial bandit: 80*100 = 8000
 }
 
+table(arm_opt_mult_rpm)
+#arm_opt_mult_rpm  4800+4800
+#1  2  7 17 21 22 25 27 32 37 42 97 
+#1 22  1  1  2 60  1  2  1  7  1  1 
+#arm_opt_mult_rpm  2400+2400
+#2  17  21  22  27  32  37  45  52  57  62  67  71  82  87  97 102 
+#16   3   1  48   3   2  15   1   1   2   1   2   1   1   1   1   1 
 
 
-save.image("/Users/Vera/Dropbox/study/google/code_22_copyimg.RData")
+save.image("/Users/Vera/Documents/GitHub/sequen_samp/R/code_22_copyimg.RData")
