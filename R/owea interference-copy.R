@@ -162,7 +162,7 @@ weight1 <- function(design,design_stg1,weight,theta_stg1,pp){
       # all weights are positive #
       # tmp <- dw(design,weight_long,I,covar,t,p,drop,pp)
       # diff <- sum((tmp$d1w)^2)
-      diff <- sum((weight_new-weight_short)^2)
+      diff <- sum((weight_new-weight_short)^2) #????????????????
       weight_short <- weight_new
       weight_long <- matrix(c(weight_new,1-sum(weight_new)),ncol=1)
     }
