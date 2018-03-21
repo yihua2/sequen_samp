@@ -92,7 +92,7 @@ g_part <- diag(rep(1,15))
 design_stg1 = xt
 theta_stg1 = theta_hat
 
-d1d <- opt_design(design_stg1,theta_stg1 ,n=2400,pp=0,space)
+profvis({d1d <- opt_design(design_stg1,theta_stg1 ,n=2400,pp=0,space)})
 
 #d1d$design_exact
 #d1d$weight_exact
