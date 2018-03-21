@@ -65,7 +65,7 @@ compute.win.prob = function(y,n,ndraws){
 #} 
 
 
-#the indicator way to calculate posterior distribution theta 
+#the indicator way to calculate posterior distribution theta #
 sample_post = function(n_acc,y_acc,X,theta_pri){
   z=c()
   

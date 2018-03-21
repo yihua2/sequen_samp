@@ -17,7 +17,7 @@ infor_point <- function(point, #a row (or rows) from the design, 1 by number of 
                         theta_stg1 #tentatively estimated theta(from stage 1)
 ){
   point = as.matrix(point,nrow = length(theta_stg1))
-  s = as.numeric(t(point)%*%theta_stg1_0)
+  s = as.numeric(t(point)%*%theta_stg1)
   infor = (dnorm(s))^2/pnorm(s)/(1-pnorm(s))*point%*%t(point)
   return(infor)
 }
@@ -38,9 +38,9 @@ infor_design <- function(design_stg1=NULL, #design in stage 1: n1 by number of p
     for (i in 1:dim(design_stg1)[1]){
       out = out+ infor_point(design_stg1[i,], theta_stg1)
     }
-    out0 = out
-    a1 = dim(design_stg1)[1]/(dim(design_stg1)[1]+n)
-    a2 = n/(dim(design_stg1)[1]+n)
+    out0 = out/dim(design_stg1)[1]
+    a1 = dim(design_stg1)[1]/(dim(design_stg1)[1]+dim(design)[1])
+    a2 = dim(design)[1]/(dim(design_stg1)[1]+dim(design)[1])
   }else{
     out0 = matrix(0,nrow=t,ncol=t)
     a1 = 1
@@ -84,7 +84,7 @@ dw <- function(design,weight,I,covar,theta_stg1,pp){
   if(pp==0){
     covar.inv <- MASS::ginv(covar)
     for (i in 1:(NROW(design)-1)){
-      mid_i <- infor_point(design[i,],theta_stg1)-Im
+      mid_i <- infor_point(design[i,],theta_stg1)-Im #??????????????????
       d1w_part[[i]] <- -(g_part%*%I.inv%*%(mid_i)%*%I.inv%*%t(g_part)) # A(g, xi)
       d1w[i,1] <- sum(diag(covar.inv%*%d1w_part[[i]]))}
     for(i in 1:(NROW(design)-1)){
@@ -121,7 +121,7 @@ dw <- function(design,weight,I,covar,theta_stg1,pp){
 
 # directional derivative #
 dp <- function(pp,point_new,design,design_stg1,I.inv,covar,theta_stg1,weight){
-  A <- g_part%*%(I.inv%*%(infor_point(point_new,theta_stg1)-
+  A <- (n/(n+dim(design_stg1)[1]))*g_part%*%(I.inv%*%(infor_point(point_new,theta_stg1)-
                             infor_design(design_stg1 = NULL,design,weight,theta_stg1))%*%I.inv)%*%t(g_part)
   if(pp==0){
     out <- sum(diag(MASS::ginv(covar)%*%A))
@@ -193,40 +193,45 @@ weight2 <- function(design,design_stg1,weight,theta_stg1,pp){
 
 
 opt_design <- function(design_stg1,theta_stg1,n,pp,space){
-  p=length(theta_stg1)
+  p=11#length(theta_stg1)
   n<<-n
   point_space <- space
   index.initial <- sample(1:NROW(point_space),p) # initial selection
   design <- point_space[index.initial,] # initial design
-  print(c('initial selection:'))
-  print(index.initial)
-  print(c('initial design is:'))
-  print(design)
+  #print(c('initial selection:'))
+  #print(index.initial)
+  #print(c('initial design is:'))
+  #print(design)
+  
   # initialize parameters #
   d_p <- 1 
   weight_opt <- matrix(1/(p),ncol = 1, nrow = p)
   iter <- 0
   # initialization ends #
   time1 <- system.time({
-    while(d_p>0.00001 & iter <= 200){
+    while(d_p>0.005 & iter <= 100){#0.00001
       iter <- iter + 1
       # x* obtained #
-      tmp <- weight2(design,design_stg1,weight_opt,theta_stg1,pp)
+      time2 <- system.time( tmp <- weight2(design,design_stg1,weight_opt,theta_stg1,pp))
       # newton optimization #
       weight_opt <- tmp$weight
       design <- tmp$design
-      I <- infor_design(design_stg1,design,weight_opt,theta_stg1)
+      
+        I <- infor_design(design_stg1,design,weight_opt,theta_stg1)
       I.inv <- MASS::ginv(I)
       covar <- g_part%*%I.inv%*%t(g_part)
+      
       # find x* = argmax dp(x*,design) #
       dp_value <- rep(0,NROW(point_space))
+      
       for (i in 1:NROW(point_space)){
         dp_value[i] <- dp(pp,point_space[i,],design,design_stg1,I.inv,covar,theta_stg1,weight_opt)
         point_new <- point_space[which.max(dp_value),]
       }
+        
       d_p <- max(dp_value)
-      #print(d_p)
-      if (d_p < 0.00001){
+     # print(c(d_p,time2[3]))
+      if (d_p < 0.005 ){#0.00001
         print('optimal')
         break
       }else{
@@ -267,7 +272,7 @@ opt_design <- function(design_stg1,theta_stg1,n,pp,space){
     weight_exact <- weight_exact[!tmp.zero]
     design_exact <- design[!tmp.zero,]
     
-    # comprehensive rounding #  ##?????? ignore for now
+    # comprehensive rounding #  ##?????? ignore for now #might result in replicate rows of design
 #    for(i in 1:NROW(space)){
 #      phi.old <- phi(g_part%*%MASS::ginv(infor_design(design_stg1,design_exact,weight_exact,theta_stg1))%*%t(g_part),pp)
 #      for(j in 1:NROW(design_exact)){
@@ -289,6 +294,6 @@ opt_design <- function(design_stg1,theta_stg1,n,pp,space){
   })  
   out <- list(design_approx=design,weight_approx=weight_opt,design_exact=design_exact,weight_exact=weight_exact,dp=d_p,
               time_approx = time1, time_exact = time2)
-  print(out)
+  #print(out)
   return(out)
 }
