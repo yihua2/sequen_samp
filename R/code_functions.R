@@ -85,8 +85,8 @@ sample_post = function(n_acc,y_acc,X,theta_pri){
   
  # n_hat = rep(0,120)
 #  n_hat[as.numeric(levels(n$ind))] = n$Freq
-  
-  omg = solve(diag(rep(1,15))+t(X)%*%diag(n_acc)%*%X)
+  p = length(theta_pri)
+  omg = solve(diag(rep(1,p))+t(X)%*%diag(n_acc)%*%X)
   theta_tilde = omg%*%(t(X)%*%matrix(z,nrow = 120))
   
   samp = mvrnorm(n = 1, mu = theta_tilde, Sigma = omg) 
@@ -97,14 +97,15 @@ sample_post = function(n_acc,y_acc,X,theta_pri){
 
 sim.post<- function(nruns,ndraws,n_acc,y_acc,X,theta_prior, last_N){
   
-  # generate Markov chain of posterior distributions
-  post = matrix(NA,nrow = nruns, ncol =15)
+  # generate Markov chain of posterior distributions:nruns
+  p = length(theta_prior)
+  post = matrix(NA,nrow = nruns, ncol =p)
   post[1,] = sample_post(n_acc,y_acc,X,theta_pri = theta_prior)
   for (kk in 2:nruns){
     post [kk,] = sample_post(n_acc,y_acc,X,theta_pri = post[kk-1,])
   }
   
-  #sample 100 theta from the (stabilzed) posterior distribution(assume the last 70 is stable)
+  #sample ndraws theta from the (stabilzed) posterior distribution(assume the last last_N is stable)
   ind1 = sample(c((nruns-last_N+1):nruns),size = ndraws, replace = T)
   post1 = post[ind1,]
   
@@ -115,7 +116,6 @@ sim.post<- function(nruns,ndraws,n_acc,y_acc,X,theta_prior, last_N){
 
 prob.winner = function(post){
   k = dim(X)[1]
-  #w = table(factor(max.col(X%*%post),level = 1:k))
   w = table(factor(max.col(t(post)%*%t(X)),level = 1:k))
   return(w/sum(w))
 }

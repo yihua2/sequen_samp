@@ -1,64 +1,76 @@
 
-#######################
-# version fin: multistage -contrast matrix identity, change theta to length 11
-########################
-library(truncnorm)
-library(MASS)
-library(prodlim)
-library(profvis)
-library(foreach)
-library(doParallel)
-library(plyr)
+#### 
+#### version fin2: multistage change stage 2 only estimate part of the parameters version 2 :change n1 , adjusted mu0
+##  ##
 
-N= matrix(c(rep(0,60),rep(1,60), 
-            rep(0,20),rep(1,20),rep(2,20),rep(0,20),rep(1,20),rep(2,20),
-            rep(c(rep(0,5),rep(1,5),rep(2,5),rep(3,5)),6),
-            rep(c(0,1,2,3,4), 24)), nrow= 120, ncol = 4)
-
-########## Bernoulli Bandit For one single simulation  #########
-#contrast matrix
-#g_part = diag(rep(1,11))
-#Contrast matrix
-g_part = cbind(rep(1,11),
-               rbind(rep(0,14),
-                     c(-1,1,rep(0,12)),
-                     cbind(matrix(0,nrow = 2, ncol = 2),rep(-1,2),diag(1,2),matrix(0,nrow = 2, ncol = 9)),
-                     cbind(matrix(0,nrow = 3, ncol = 5),rep(-1,3),diag(1,3),matrix(0,nrow = 3, ncol = 5)),
-                     cbind(matrix(0,nrow = 4, ncol = 9),rep(-1,4),diag(1,4))))
-
-set.seed(300)
-theta1 = rnorm(0,sd =sqrt(0.1),n = 10) 
-mu = rnorm(mean = qnorm(p = 0.05), sd = sqrt(0.1), n = 1)
-theta= matrix(c(mu,theta1),nrow = 11)
-
-
-X = matrix(c(rep(1,120),#int
-             rep(1,60),rep(0,60),#factor1: 1
-             rep(1,20),rep(0,40),rep(1,20),rep(0,40),#factor2: 1
-             rep(0,20),rep(1,20),rep(0,20),rep(0,20),rep(1,20), rep(0,20),#factor2: 2
-             rep(c(rep(1,5),rep(0,15)),6),#factor3: 1
-             rep(c(rep(0,5),rep(1,5),rep(0,10)),6),#factor3: 2
-             rep(c(rep(0,10),rep(1,5),rep(0,5)),6),#factor3: 3
-             rep(c(1,0,0,0,0),24),#factor4: 1
-             rep(c(0,1,0,0,0),24),#factor4: 2
-             rep(c(0,0,1,0,0),24),#factor4: 3
-             rep(c(0,0,0,1,0),24)#factor4: 
-), nrow=120, ncol=11)
+####code _functions changed ####
+sample_post = function(n_acc,y_acc,X1,theta_pri ,k0){
+  z=c()
+  
+  for (k in 1:dim(X1)[1]){
+    mean0 = as.numeric(matrix(X1[k,],nrow = 1)%*%theta_pri)+mu0[k] ##
+    if(y_acc[k]==0 || n_acc[k]-y_acc[k] == 0){
+      z[k] = 0#0.5
+    }else{
+      z1 = sum(rtruncnorm(n=y_acc[k], sd=1,a=0, mean = mean0))#a=0
+      z2 = sum(rtruncnorm(n=n_acc[k]-y_acc[k], sd=1,b=0,mean = mean0))#b=0.5
+      z[k] = z1+z2
+    }
+    
+  }
+  
+  p = length(theta_pri)
+  
+  omg = solve(diag(rep(1,p))+t(X1)%*%diag(n_acc)%*%X1) 
+  
+  #theta_tilde = omg%*%(t(X1)%*%matriX1(z,nrow = 120))  ###
+  theta_tilde = omg%*%(t(X1)%*%matrix(z,nrow = k0))
+  
+  samp = mvrnorm(n = 1, mu = theta_tilde, Sigma = omg) 
+  return(samp)
+}
 
 
-hist(pnorm(X%*%theta),xlim = c(0,1),breaks = 8)
-mean(pnorm(X%*%theta)) #
-which.max(pnorm(X%*%theta)) #13-0.7397591
-mustar = X[which.max(pnorm(X%*%theta)),]%*%theta
-sort(pnorm(X%*%theta),decreasing = T)[1:20]
-order(pnorm(X%*%theta),decreasing = T)[1:20]
-#############
 
-funpaste = function(x){return(paste('V',x,sep = ""))}
+sim.post<- function(nruns,ndraws,n_acc,y_acc,X1,theta_prior, last_N ,k0){
+  
+  # generate Markov chain of posterior distributions
+  
+  p = length(theta_prior)
+  post = matrix(NA,nrow = nruns, ncol =p)###
+  post[1,] = sample_post(n_acc,y_acc,X1,theta_pri = theta_prior ,k0)
+  for (kk in 2:nruns){
+    post [kk,] = sample_post(n_acc,y_acc,X1,theta_pri = post[kk-1,] ,k0)
+  }
+  
+  #sample 100 theta from the (stabilzed) posterior distribution(assume the last 70 is stable)
+  ind1 = sample(c((nruns-last_N+1):nruns),size = ndraws, replace = T)
+  post1 = post[ind1,]
+  
+  return(t(post1))
+}
 
 
-N=30
+
+prob.winner = function(post){
+  k = dim(X1)[1]
+  w = table(factor(max.col(t(post)%*%t(X1)),level = 1:k))
+  return(w/sum(w))
+}
+
+compute.win.prob = function(nruns,ndraws,n_acc,y_acc,X1,theta_prior, last_N ,k0){
+  return(prob.winner(sim.post(nruns,ndraws,n_acc,y_acc,X1,theta_prior, last_N ,k0)))
+  
+}
+
+##### code_fucntions end
+
+
+#### the iterations ####
+
+N=100
 arm_opt_mult_rpm = integer(N)
+n1 = integer(N)
 for(R in 1:N){
   
   theta_prior = matrix(rnorm(n = 11,mean=rep(0,11), sd = rep(1,11)),nrow = 11)
@@ -88,9 +100,10 @@ for(R in 1:N){
   #n_acc trials per configuration(=kk)
   n_acc[as.numeric(levels(n$ind))] =  n_acc[as.numeric(levels(n$ind))] + n$Freq 
   
-  
+  k0 = 120
+  mu0 = rep(0,k0)
   #calculate theta: (similar probability matching method, to make it comparable to TS)
-  theta_hat = apply(sim.post(nruns = 2000,ndraws = 500,n_acc,y_acc,X,theta_prior, last_N = 500),MARGIN = 1,FUN = mean)
+  theta_hat = apply(sim.post(nruns = 2000,ndraws = 500,n_acc,y_acc,X,theta_prior, last_N = 500,k0),MARGIN = 1,FUN = mean) ###
   #data.frame(theta_hat,theta,theta_prior)
   #sort(pnorm(X%*%theta_hat),decreasing = T)[1:20]
   #which.max(sort(pnorm(X%*%theta_hat),decreasing = T)[1:20]) #1
@@ -169,7 +182,10 @@ for(R in 1:N){
   
   
   if(length(ind_no)>1){
-    d1d <- opt_design(design_stg1,theta_stg1 ,n1=1600,pp=0,space)
+    #total number of levels k0
+    k0 = ifelse(comp[1,]$continue==T,2,1)*ifelse(comp[2,]$continue==T,3,1)*ifelse(comp[3,]$continue==T,4,1)*ifelse(comp[4,]$continue==T,5,1)
+    n1[R] = floor(length(ind_no)*1200/11)
+    d1d <- opt_design(design_stg1,theta_stg1 ,n1 = n1[R],pp=0,space)
     
     
     ####### Phase 3: execute the experiments using the generated design ####
@@ -177,51 +193,74 @@ for(R in 1:N){
     
     # #            use the probability matching to calculate the estimate of theta
     ##   data preparation
+    X1 = unique(X[,ind_no])
+    
     yt = c()
     config = c()
     nt = c()
+    mu0 = integer(NROW(d1d$design_exact))
     for (i in 1:NROW(d1d$design_exact)){
       xt_ = matrix(d1d$design_exact[i,],ncol = 11) ###
-      config[i] = row.match(as.numeric(xt_),X)
+      #xt_ = matrix(d1d$design_exact[i,ind_no],ncol = length(ind_no)) ###
+      xt_other =  xt_[setdiff(1:11,ind_no)]
       
+      config[i] = row.match(as.numeric(xt_[ind_no]),X1)
+      
+      #yt[i] = rbinom(n=1, size= d1d$weight_exact[i],prob = pnorm(xt_%*%theta[ind_no]))
       yt[i] = rbinom(n=1, size= d1d$weight_exact[i],prob = pnorm(xt_%*%theta))
       nt[i] = d1d$weight_exact[i]
       
+      mu0[i] = xt_other%*%theta_stg1[setdiff(1:11,ind_no)]
+      
     }
     
-    exp = data.frame(config = config, y = yt, n = nt)
+    
+    exp = data.frame(config = config, y = yt, n = nt,mu0 = mu0)
     
     #replication may occur with  d1d$design_exact need to check
-    if(sum(dim(d1d$design_exact)!=dim(unique(d1d$design_exact)))>0){
-      df = aggregate(x = cbind(exp$y,exp$n), by = list(config),FUN = 'sum')
-      names(df) = c("config", "y","n")
+   
+     #if(sum(dim(d1d$design_exact)!=dim(unique(d1d$design_exact)))>0){
+    #  df = aggregate(x = cbind(exp$y,exp$n), by = list(config),FUN = 'sum')
+    #  names(df) = c("config", "y","n")
+    #  exp = df
+    #}
+    
+    if(length(exp$config)!=length(unique(exp$config))){
+      df = aggregate(x = cbind(exp$y,exp$n,exp$mu0), by = list(exp$config),FUN = 'sum')
+      names(df) = c("config", "y","n",'mu0')
       exp = df
     }
     
     
-    exp1 = data.frame(config = setdiff(1:120,exp$config),y=0,n=0)
-    exp = rbind(exp,exp1)
+    #total number of levels k0
+    k0 = ifelse(comp[1,]$continue==T,2,1)*ifelse(comp[2,]$continue==T,3,1)*ifelse(comp[3,]$continue==T,4,1)*ifelse(comp[4,]$continue==T,5,1)
+    if (NROW(exp)<k0){
+      exp1 = data.frame(config = setdiff(1:k0,exp$config),y=0,n=0,mu0 = 0)
+      exp = rbind(exp,exp1)
+      
+    }
     exp = exp[order(exp$config),]
     rownames(exp) <- NULL
-    #> exp[1:5,]
-    #config y  n
-    #1      1 8 26
-    #2      2 0  0
-    #3      3 0  0
+    mu0 = exp$mu0
     
+    #theta_pri = c(theta_stg1[1]+)
     ## (similar probability matching method, to make it comparable to TS)
-    #theta_hat_pos1 = apply(sim.post(nruns = 2000,ndraws = 500,n_acc =exp$n ,y_acc = exp$y,X[,ind_no],theta_stg1[ind_no], last_N = 500),MARGIN = 1,FUN = mean)
-    theta_hat_pos1 = apply(sim.post(nruns = 3000,ndraws = 500,n_acc =exp$n ,y_acc = exp$y,X,theta_stg1, last_N = 500),MARGIN = 1,FUN = mean)
+    #theta_hat_pos1 = apply(sim.post(nruns = 2000,ndraws = 500,n_acc =exp$n ,y_acc = exp$y,X,theta_stg1, last_N = 500),MARGIN = 1,FUN = mean)
+    theta_hat_pos1 = apply(sim.post(nruns = 3000,ndraws = 500,n_acc =exp$n ,y_acc = exp$y,X1,theta_stg1[ind_no], last_N = 500,k0 ),MARGIN = 1,FUN = mean)
+    
+    
+    #######phase 3 end ###
+    
     
     
     theta_hat_pos = rep(0,length(theta))
     #theta_hat_pos[ind_no]= theta_hat_pos1
-    theta_hat_pos[ind_no]= theta_hat_pos1[ind_no]
-    theta_hat_pos[setdiff(1:11,ind_no)] = theta_hat[setdiff(1:11,ind_no)]
+    theta_hat_pos[ind_no]= theta_hat_pos1
+    theta_hat_pos[setdiff(1:length(theta),ind_no)] = theta_hat[setdiff(1:length(theta),ind_no)]
     #order(pnorm(X%*%theta_hat_pos),decreasing = T)[1:10]
     #sort(pnorm(X%*%theta_hat_pos),decreasing = T)[1:20]
     #var(pnorm(X%*%theta_hat_pos))
-  
+    
     
   }else{
     #when stage 1 already selected the best levels for each factor, no need for stage2
@@ -231,36 +270,28 @@ for(R in 1:N){
   
   arm_opt_mult_rpm[R]=which.max(pnorm(X%*%theta_hat_pos))
   
-  #if(which.max(pnorm(X%*%theta_hat_pos))!=13) browser()
+ # if(which.max(pnorm(X%*%theta_hat_pos))!=13) browser()
   
 } 
 
 table(arm_opt_mult_rpm)
-#arm_opt_mult_rpm 1200+2400
-#11 13 
-#2 48 
-#arm_opt_mult_rpm 960+600 kk=8 new g_part 4/5
-#3 11 12 13 14 31 33 
-#1  4  2 20  1  1  1 
-
-#arm_opt_mult_rpm  960+800 kk=8 new g_part 4/5
-#1  3 11 13 14 31 33 
-#1  1 12 76  2  1  7 
-#arm_opt_mult_rpm 1080+900 kk=9 new g_part 4/5
-#11 13 33 
-#9 40  1
-#arm_opt_mult_rpm 840+900 kk=7 new g_part 4/5
-#1 11 12 13 33 
-#1  5  1 16  7 
-#arm_opt_mult_rpm 960+900 kk=8 new g_part 4/5
+#arm_opt_mult_rpm 8+800
 #11 12 13 33 53 
-#2  1 25  1  1
-#arm_opt_mult_rpm 840 + 800 kk=7 new g_part 4/5
-#3 11 13 33 53 
-#1  4 23  1  1 
-#arm_opt_mult_rpm 840 + 800 kk=7 new g_part 7/10
+#2  1 22  4  1 
+
+#arm_opt_mult_rpm 8+400
+#11 13 14 15 33 53 
+#3 20  1  1  3  2 
+
+#arm_opt_mult_rpm #proportion of 800 +8
+#11 12 13 14 32 33 51 
+#5  1 18  1  1  3  1 
+#arm_opt_mult_rpm #proportion of 1200 +8
+#11 13 33 
+#7 20  3
+#arm_opt_mult_rpm  #proportion of 1200 +8
 #11 12 13 31 33 
-#6  2 19  1  2 
-#arm_opt_mult_rpm 840 + 800 kk=7 new g_part 8/10
-#11 12 13 14 33 53 
-#11  1 15  1  1  1
+#2  1 24  2  1 
+#summary(n1)
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#0.0   436.0   545.0   555.9   763.0   872.0
