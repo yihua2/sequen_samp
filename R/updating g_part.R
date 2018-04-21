@@ -109,10 +109,12 @@ g_part[,1] = rep(1,length(ind_no))
 
 out = order(pnorm(X%*%theta_hat),decreasing = T)[1:5]
 
-dat = X[out,]
-for (i in 1:NROW(dat)){
-  
+temp = X[out,]
+g_part = matrix(0, nrow = 4,ncol = 11)
+for (i in 2:NROW(temp)){
+  g_part[i-1,] = temp[i,]-temp[1,]
 }
+
 
 
 

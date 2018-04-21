@@ -31,6 +31,6 @@ arm_opt_mult_rpm  8+400 all in stage 2 nruns = 2000+3000
 3 11 13 14 15 33 51 
 1  3 18  1  1  5  1 
 
-arm_opt_mult_rpm 8+600 all in stage 2 nruns = 2000+3000
+arm_opt_mult_rpm
 11 12 13 15 31 33 
 5  1 18  1  1  4 

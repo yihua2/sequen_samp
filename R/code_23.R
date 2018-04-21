@@ -117,12 +117,13 @@ N=100
 arm_opt_frac = c()
 iter_frac = c()
 for (R in 1:N){
-  theta_prior = matrix(rnorm(n = 15,mean=rep(0,15), sd = rep(1,15)),nrow = 15)
+  p = length(theta)
+  theta_prior = matrix(rnorm(n = p,mean=rep(0,p), sd = rep(1,p)),nrow = p)
   w1 = pnorm(X%*%theta_prior)#matrix(c(rep(1/2,120)),nrow = 1)
   L2 = NULL
   y_acc = numeric(120)
   n_acc = numeric(120)
-  proceed = True
+  proceed = TRUE
   t=1
   while(proceed){
     # Sample 100 arms according to conjugacy priors
@@ -165,7 +166,7 @@ for (R in 1:N){
     #w1 = w1 + as.data.frame(w10)$Freq
     w1 = as.data.frame(w10)$Freq
   
-    proceed = (max(table(ind))<70)
+    proceed = (max(table(ind))<75)
     t = t + 1
 }
   arm_opt_frac[R] = as.numeric(levels(n[which.max(n$Freq),]$ind)[n[which.max(n$Freq),]$ind])
