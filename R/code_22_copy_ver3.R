@@ -30,7 +30,7 @@ set.seed(300)
 theta1 = rnorm(0,sd =sqrt(0.1),n = 10) 
 mu = rnorm(mean = qnorm(p = 0.05), sd = sqrt(0.1), n = 1)
 theta= matrix(c(mu,theta1),nrow = 11)
-#sort(pnorm(X%*%theta),decreasing = T)[1:20]
+sort(pnorm(X%*%theta),decreasing = T)[1:20]
 
 X = matrix(c(rep(1,120),#int
              rep(1,60),rep(0,60),#factor1: 1

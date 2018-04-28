@@ -201,7 +201,7 @@ for(R in 1:N){
     #theta_hat_pos1 = apply(sim.post(nruns = 2000,ndraws = 500,n_acc =exp$n ,y_acc = exp$y,X,theta_stg1, last_N = 500),MARGIN = 1,FUN = mean)
     theta_hat_pos1 = apply(sim.post(nruns = 3000,ndraws = 500,n_acc =exp$n ,y_acc = exp$y,X1,theta_stg1[ind_no], last_N = 500,k0 ),MARGIN = 1,FUN = mean)
     
-    
+  
     #######phase 3 end ###
     
     if (max(g_part[,ind_no]%*%theta_hat_pos1)>0){
@@ -216,6 +216,9 @@ for(R in 1:N){
 } 
 
 table(arm_opt_mult_rpm)
+
+### these are for theta(13)  ###
+
 
 #arm_opt_mult_rpm 8+800
 #11 13 14 15 32 53 
@@ -259,3 +262,38 @@ table(arm_opt_mult_rpm)
 
 
 # remember to record variance
+
+
+
+### these are for theta(2)  ###
+
+#sort(pnorm(X%*%theta),decreasing = T)[1:20]
+#[1] 0.8208992 0.7382919 0.7233833 0.6598241 0.6337775 0.6225607 0.6188620 0.6062569 0.5856221 0.5522208 0.5343096 0.5243865 0.5182656 0.5154332 0.5086900 0.5063827
+#[17] 0.4955589 0.4906728 0.4782836 0.4563721
+#> order(pnorm(X%*%theta),decreasing = T)[1:20]
+#[1]   2  12  42   4  62  52   5  22  17  14  44  72   7   3  15 102  32  45   1  57
+
+#arm_opt_mult_rpm 10+1600
+#2  5 12 17 42 
+#25  1  1  1  2 
+
+
+### these are for theta(32)  ###
+# sort(pnorm(X%*%theta),decreasing = T)[1:20]
+#[1] 0.7038422 0.6285020 0.5828967 0.5773997 0.5585128 0.5133815 0.4950735 0.4801765 0.4759205 0.4484183 0.4479160 0.4309146 0.4289790 0.3984715 0.3863868 0.3849043
+#[17] 0.3795400 0.3679630 0.3613941 0.3535014
+#> order(pnorm(X%*%theta),decreasing = T)[1:20]
+#[1] 32 31 35 37 22 92 36 27 21 52 40 91 25 26 34 95 97 51 82 30
+
+
+
+### these are for theta(27) ##
+#> sort(pnorm(X%*%theta),decreasing = T)[1:20]
+#[1] 0.6798228 0.6694615 0.6218070 0.6108186 0.5406304 0.5359089 0.5274656 0.5244620 0.5134859 0.5064892 0.5020082 0.4950094 0.4780887 0.4649094 0.4390600 0.4339999
+#[17] 0.4277405 0.4227057 0.3916393 0.3789762
+#> order(pnorm(X%*%theta),decreasing = T)[1:20]
+#[1] 27 22 28 23 32 26 37 21 29 30 24 25 33 38 47 87 42 82 31 36
+
+#arm_opt_mult_rpm #10+1600
+#22 23 25 27 28 37 
+#11  2  1 14  1  1 

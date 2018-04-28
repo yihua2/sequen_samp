@@ -1,0 +1,142 @@
+% Copyright 2004 by Till Tantau <tantau@users.sourceforge.net>.
+%
+% In principle, this file can be redistributed and/or modified under
+% the terms of the GNU Public License, version 2.
+%
+% However, this file is supposed to be a template to be modified
+% for your own needs. For this reason, if you use this file as a
+% template and not specifically distribute it as part of a another
+% package/program, I grant the extra permission to freely copy and
+% modify this file as you see fit and even to delete this copyright
+% notice. 
+
+\documentclass{beamer}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage[caption = false]{subfig}
+\usepackage{lipsum}
+\usepackage{amsfonts}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+
+\usepackage{graphicx}% http://ctan.org/pkg/graphicx
+\usepackage{amsmath}% http://ctan.org/pkg/amsmath
+\makeatletter
+\newcommand{\distas}[1]{\mathbin{\overset{#1}{\kern\z@\sim}}}%
+\newsavebox{\mybox}\newsavebox{\mysim}
+\newcommand{\distras}[1]{%
+  \savebox{\mybox}{\hbox{\kern3pt$\scriptstyle#1$\kern3pt}}%
+  \savebox{\mysim}{\hbox{$\sim$}}%
+  \mathbin{\overset{#1}{\kern\z@\resizebox{\wd\mybox}{\ht\mysim}{$\sim$}}}%
+}
+\makeatother
+%\usepackage[demo]{graphicx}
+% There are many different themes available for Beamer. A comprehensive
+% list with examples is given here:
+% http://deic.uab.es/~iblanes/beamer_gallery/index_by_theme.html
+% You can uncomment the themes below if you would like to use a different
+% one:
+
+%\usetheme{default}
+\usetheme{CambridgeUS}
+\newcommand\Fontvi{\fontsize{18}{7.2}\selectfont}
+\newcommand{\lenitem}[2][.7\linewidth]{\parbox[t]{#1}{\strut #2\strut}}
+\title{Research Progress  }
+
+
+\author{Yi Hua  }
+
+
+% - Use the \inst command only if there are several affiliations.
+
+\date{04/2018}
+
+%\subject{Theoretical Computer Science}
+% This is only inserted into the PDF information catalog. Can be left
+% out. 
+
+% If you have a file called "university-logo-filename.xxx", where xxx
+% is a graphic format that can be processed by latex or pdflatex,
+% resp., then you can add a logo as follows:
+
+% \pgfdeclareimage[height=0.5cm]{university-logo}{university-logo-filename}
+% \logo{\pgfuseimage{university-logo}
+
+% Delete this, if you do not want the table of contents to pop up at
+% the beginning of each subsection:
+
+% Let's get started
+\begin{document}
+\begin{frame}
+\titlepage
+\end{frame}
+
+
+\begin{frame}{Outline}
+  \tableofcontents
+  % You might wish to add the option [pausesections]
+\end{frame}
+
+\section{Bioassay Project}
+\subsection{Methodologies}
+
+
+\begin{frame}{Background of the problem}
+\begin{itemize}
+    \item In pharmaceutical industries, assays of certain drug substances are taken to ensure quality or to compare the effect of different substances. 
+    \item When test samples are plated, sometimes a standard preparation is required in each plate along with all test preparations.
+    \item Also, the locations of the test preparations in each plate are of concern -- we hope to assign test preparations to each location as evenly as possible across plates.
+   \end{itemize}
+    
+\end{frame}
+
+\begin{frame}{Problem Setup}
+    \begin{itemize}
+        \item Example setup: there are 20 plates, 6 test samples and 1 standard preparation, four locations within each plate.
+        \begin{figure}
+            \centering
+            \includegraphics[scale = 0.25]{well_it.png}
+            \label{fig:my_label}
+        \end{figure}
+             \item The model of this problem can be simplified as follows
+       \begin{align}
+    Y \sim P_{k} + X_{d(k,h)}+ \rho_{h}+\epsilon  
+\end{align}
+    where 
+    Y is the response, X is for test samples or standard preparation (d=0,1..6), $\rho$ is the location effect (h=1..4),and $P$ is plate (k = 1..20).
+
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Plate layout for test/control samples}
+    \begin{figure}
+        \centering
+        \includegraphics[scale=0.5]{design_it.png}
+        \label{fig:my_label}
+    \end{figure}
+\end{frame}
+
+
+
+
+\subsection{Simulation studies}
+
+
+\section{Multi-armed Bandit Project}
+\subsection{Methodologies}
+\subsection{Simulation studies}
+
+
+
+
+
+
+
+\begin{frame}{References}
+[1]A. Hedayat and Min Yang(2005). Optimal and Efficient Crossover Designs For Comparing Test Treatments with A Control Treatment.\textit{The Annals of Statistics}.Vol. 33. No.2.915-943\\
+
+[2]A. Hedayat(1980). Study of optimality criteria in design of experiments. \textit{International Symposium on Statistics and Related Topics}\\
+
+[3]D. Majumbdar and W.I.Notz(1983), Optimal incomplete block designs for comparing treatments with a control. \textit{The Annals of Statistics}.Vol. 11. No.1.258-266.
+\end{frame}
+\end{document}
