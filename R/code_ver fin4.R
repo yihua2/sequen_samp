@@ -239,3 +239,6 @@ table(arm_opt_mult_rpm)
 #arm_opt_mult_rpm 10+1600
 #1  3  8 11 12 13 14 18 28 31 33 34 38 53 
 #1  2  1  1  6  4  3  3  1  1  1  1  1  4 
+
+
+### these are for theta(26)  ###
